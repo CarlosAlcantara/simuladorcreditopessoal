@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador de crédito pessoal</title>
+<style>
+  :root {
+    --navy: #1e3a5f;
+    --orange: #e07a1f;
+    --orange-soft: #fff3e0;
+    --blue-soft: #eaf2fb;
+    --track: #d1d6e0;
+    --text: #3a3f47;
+    --muted: #6b7380;
+    --border: #9aa4b2;
+    --divider: #e1e4ea;
+    --bg: #f4f6f9;
+    --card: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "DejaVu Sans", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 32px 16px 48px;
+  }
+  .wrap { max-width: 830px; margin: 0 auto; }
+
+  /* Cartão principal */
+  .sim {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .sim header {
+    background: var(--navy);
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 32px;
+  }
+  .sim header h1 { margin: 0; font-size: 1.2rem; font-weight: 700; }
+  .sim header span { font-style: italic; color: #f0b98a; font-size: .9rem; white-space: nowrap; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 26px 32px 26px;
+  }
+  .left  { padding-right: 40px; border-right: 2px solid var(--divider); }
+  .right { padding-left: 36px; display: flex; flex-direction: column; gap: 24px; }
+
+  /* Controles deslizantes */
+  .field { margin-bottom: 26px; }
+  .field-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .field-head label { font-size: .95rem; }
+  .field-head output { font-weight: 700; color: var(--navy); font-size: 1rem; }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 8px; border-radius: 4px;
+    background: var(--track); outline: none; cursor: pointer; margin: 6px 0;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #fff; border: 3px solid var(--orange);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; border: 3px solid var(--orange);
+  }
+  input[type=range]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(224,122,31,.25); }
+
+  /* Tarifas */
+  .fees-title { font-size: .95rem; margin: 6px 0 14px; }
+  .fee {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: .92rem; margin-bottom: 12px;
+  }
+  .fee .money { display: flex; align-items: center; gap: 4px; }
+  .fee input {
+    width: 90px; text-align: right; font: inherit; color: var(--text);
+    border: none; border-bottom: 1px dashed var(--border);
+    background: transparent; padding: 2px 0;
+  }
+  .fee input:focus { outline: none; border-bottom-color: var(--orange); }
+  .fee input::-webkit-inner-spin-button { opacity: .4; }
+
+  /* Resultados */
+  .box { border-radius: 10px; padding: 18px 20px; }
+  .box-blue { background: var(--blue-soft); border: 2px solid var(--navy); }
+  .box-blue .row { display: flex; justify-content: space-between; align-items: center; }
+  .box-blue .row + .row { margin-top: 26px; }
+  .box-blue .row span:first-child { font-size: .92rem; }
+  .box-blue .row strong { color: var(--navy); }
+  #parcela { font-size: 1.25rem; }
+
+  .box-cet { background: var(--orange-soft); border: 2px solid var(--orange); }
+  .box-cet h2 { margin: 0 0 22px; color: var(--orange); font-size: .95rem; }
+  .box-cet .cet-m { font-size: 1.15rem; font-weight: 700; color: #1a1a1a; margin-bottom: 14px; }
+  .box-cet .cet-a { font-size: .95rem; }
+
+  .btn {
+    display: block; width: 100%;
+    background: var(--orange); color: #fff; border: none; border-radius: 8px;
+    font: inherit; font-weight: 700; font-size: 1.05rem;
+    padding: 16px; cursor: pointer;
+  }
+  .btn:hover { filter: brightness(1.06); }
+  .btn:focus-visible { outline: 3px solid rgba(224,122,31,.4); outline-offset: 2px; }
+
+  /* Tabela de amortização */
+  details {
+    margin-top: 20px; background: var(--card);
+    border: 1px solid var(--divider); border-radius: 10px; padding: 14px 20px;
+  }
+  summary { cursor: pointer; font-weight: 600; color: var(--navy); }
+  .explica { font-size: .9rem; line-height: 1.5; color: var(--muted); }
+  .explica code { background: var(--bg); padding: 1px 5px; border-radius: 4px; color: var(--text); }
+  .tabela-wrap { overflow-x: auto; margin-top: 12px; max-height: 420px; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--divider); white-space: nowrap; }
+  th { position: sticky; top: 0; background: var(--navy); color: #fff; font-weight: 600; }
+  th:first-child, td:first-child { text-align: center; }
+  tfoot td { font-weight: 700; background: var(--blue-soft); }
+
+  /* Aviso do botão */
+  dialog {
+    border: none; border-radius: 12px; padding: 24px 26px; max-width: 420px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.25); color: var(--text);
+  }
+  dialog::backdrop { background: rgba(20,30,45,.45); }
+  dialog h3 { margin: 0 0 10px; color: var(--navy); }
+  dialog p { line-height: 1.5; margin: 0 0 18px; }
+
+  footer { text-align: center; font-size: .8rem; color: var(--muted); margin-top: 18px; }
+
+  @media (max-width: 720px) {
+    body { padding: 16px; }
+    .sim header { padding: 16px; flex-wrap: wrap; }
+    .grid { grid-template-columns: 1fr; padding: 20px 16px; }
+    .left { padding-right: 0; border-right: none; border-bottom: 2px solid var(--divider); padding-bottom: 12px; margin-bottom: 24px; }
+    .right { padding-left: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <section class="sim" aria-label="Simulador de crédito pessoal">
+    <header>
+      <h1>Simulador de crédito pessoal</h1>
+      <span>simulação fictícia</span>
+    </header>
+
+    <div class="grid">
+      <div class="left">
+        <div class="field">
+          <div class="field-head">
+            <label for="valor">Valor desejado</label>
+            <output id="valorOut" for="valor"></output>
+          </div>
+          <input type="range" id="valor" min="1000" max="40000" step="500" value="20000">
+        </div>
+
+        <div class="field">
+          <div class="field-head">
+            <label for="prazo">Prazo</label>
+            <output id="prazoOut" for="prazo"></output>
+          </div>
+          <input type="range" id="prazo" min="6" max="72" step="1" value="48">
+        </div>
+
+        <div class="field">
+          <div class="field-head">
+            <label for="taxa">Taxa de juros</label>
+            <output id="taxaOut" for="taxa"></output>
+          </div>
+          <input type="range" id="taxa" min="0.5" max="4" step="0.05" value="1.8">
+        </div>
+
+        <p class="fees-title">Incluídos no financiamento:</p>
+        <div class="fee">
+          <label for="tarifa">Tarifa de cadastro</label>
+          <span class="money">R$ <input type="number" id="tarifa" min="0" step="50" value="600"></span>
+        </div>
+        <div class="fee">
+          <label for="seguro">Seguro prestamista</label>
+          <span class="money">R$ <input type="number" id="seguro" min="0" step="50" value="400"></span>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="box box-blue">
+          <div class="row"><span>Valor financiado</span><strong id="financiado"></strong></div>
+          <div class="row"><span>Parcela mensal</span><strong id="parcela"></strong></div>
+        </div>
+
+        <div class="box box-cet">
+          <h2>Custo efetivo total (CET)</h2>
+          <div class="cet-m" id="cetMes"></div>
+          <div class="cet-a" id="cetAno"></div>
+        </div>
+
+        <button class="btn" id="contratar" type="button">Contratar</button>
+      </div>
+    </div>
+  </section>
+
+  <details>
+    <summary>Como o cálculo é feito e tabela de amortização (Price)</summary>
+    <div class="explica">
+      <p>
+        <strong>Valor financiado</strong> = valor desejado + tarifa de cadastro + seguro prestamista.
+        Ou seja, o cliente recebe o valor desejado, mas paga juros sobre o total financiado.
+      </p>
+      <p>
+        <strong>Parcela (Sistema Price):</strong>
+        <code>PMT = PV · i / (1 − (1 + i)<sup>−n</sup>)</code>,
+        com PV = valor financiado, i = taxa mensal e n = prazo.
+      </p>
+      <p>
+        <strong>CET mensal</strong> é a taxa que iguala o valor que o cliente <em>realmente recebe</em>
+        ao valor presente das parcelas: <code>valor desejado = PMT · (1 − (1 + CET)<sup>−n</sup>) / CET</code>.
+        Não existe fórmula fechada para isolar o CET; ele é obtido numericamente (aqui, pelo método da bisseção).
+        <br><strong>CET anual</strong> = (1 + CET mensal)<sup>12</sup> − 1.
+      </p>
+      <p id="resumoTotais"></p>
+    </div>
+    <div class="tabela-wrap">
+      <table>
+        <thead>
+          <tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amortização</th><th>Saldo devedor</th></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+        <tfoot id="tfoot"></tfoot>
+      </table>
+    </div>
+  </details>
+
+  <footer>Simulação fictícia com fins didáticos. Não representa oferta de nenhuma instituição financeira.</footer>
+</div>
+
+<dialog id="aviso">
+  <h3>Simulação fictícia</h3>
+  <p>Nenhum contrato é realizado aqui. Este simulador serve para estudar como tarifas e seguros
+     incluídos no financiamento elevam o custo efetivo total (CET) acima da taxa de juros anunciada.</p>
+  <button class="btn" id="fechar" type="button">Entendi</button>
+</dialog>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const brl = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const pct = (v, casas = 2) => v.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas }) + '%';
+
+  const sliders = ['valor', 'prazo', 'taxa'].map($);
+
+  // Pinta a parte preenchida do controle deslizante em laranja
+  function pintar(el) {
+    const p = (el.value - el.min) / (el.max - el.min) * 100;
+    el.style.background = `linear-gradient(to right, var(--orange) ${p}%, var(--track) ${p}%)`;
+  }
+
+  // Parcela pelo Sistema Price
+  function parcelaPrice(pv, i, n) {
+    if (i === 0) return pv / n;
+    return pv * i / (1 - Math.pow(1 + i, -n));
+  }
+
+  // Valor presente de n parcelas iguais à taxa r
+  function valorPresente(pmt, r, n) {
+    if (r === 0) return pmt * n;
+    return pmt * (1 - Math.pow(1 + r, -n)) / r;
+  }
+
+  // CET mensal por bisseção: encontra r tal que valorPresente(pmt, r, n) = liberado
+  function cetMensal(liberado, pmt, n) {
+    if (pmt * n <= liberado) return 0;
+    let lo = 0, hi = 1;
+    for (let k = 0; k < 200; k++) {
+      const mid = (lo + hi) / 2;
+      if (valorPresente(pmt, mid, n) > liberado) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
+  function atualizar() {
+    const valor  = +$('valor').value;
+    const n      = +$('prazo').value;
+    const taxa   = +$('taxa').value / 100;
+    const tarifa = Math.max(0, +$('tarifa').value || 0);
+    const seguro = Math.max(0, +$('seguro').value || 0);
+
+    const pv  = valor + tarifa + seguro;
+    const pmt = parcelaPrice(pv, taxa, n);
+    const cet = cetMensal(valor, pmt, n);
+    const cetAno = Math.pow(1 + cet, 12) - 1;
+
+    $('valorOut').textContent = brl(valor);
+    $('prazoOut').textContent = n + ' meses';
+    $('taxaOut').textContent  = pct(taxa * 100) + ' ao mês';
+
+    $('financiado').textContent = brl(pv);
+    $('parcela').textContent    = brl(pmt);
+    $('cetMes').textContent     = pct(cet * 100) + ' ao mês';
+    $('cetAno').textContent     = pct(cetAno * 100, 1) + ' ao ano';
+
+    sliders.forEach(pintar);
+    montarTabela(pv, taxa, n, pmt, valor);
+  }
+
+  function montarTabela(pv, i, n, pmt, valor) {
+    let saldo = pv, totJ = 0, totA = 0, linhas = '';
+    for (let m = 1; m <= n; m++) {
+      const juros = saldo * i;
+      let amort = pmt - juros;
+      if (m === n) amort = saldo;          // zera o saldo na última parcela
+      saldo = Math.max(0, saldo - amort);
+      totJ += juros; totA += amort;
+      linhas += `<tr><td>${m}</td><td>${brl(pmt)}</td><td>${brl(juros)}</td><td>${brl(amort)}</td><td>${brl(saldo)}</td></tr>`;
+    }
+    $('tbody').innerHTML = linhas;
+    $('tfoot').innerHTML = `<tr><td>Total</td><td>${brl(pmt * n)}</td><td>${brl(totJ)}</td><td>${brl(totA)}</td><td>—</td></tr>`;
+    $('resumoTotais').innerHTML =
+      `Nesta simulação o cliente recebe <strong>${brl(valor)}</strong> e paga, ao todo, ` +
+      `<strong>${brl(pmt * n)}</strong> — um custo de <strong>${brl(pmt * n - valor)}</strong>.`;
+  }
+
+  sliders.forEach(el => el.addEventListener('input', atualizar));
+  ['tarifa', 'seguro'].forEach(id => $(id).addEventListener('input', atualizar));
+
+  const aviso = $('aviso');
+  $('contratar').addEventListener('click', () => aviso.showModal ? aviso.showModal() : alert('Simulação fictícia.'));
+  $('fechar').addEventListener('click', () => aviso.close());
+
+  atualizar();
+</script>
+</body>
+</html>
